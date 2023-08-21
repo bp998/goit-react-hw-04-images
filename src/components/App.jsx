@@ -1,5 +1,4 @@
-import React, { Component } from 'react';
-import css from './App.module.css';
+import React, { useState, useEffect } from 'react';
 import getPictures from 'utils/fetchImages';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
@@ -7,114 +6,93 @@ import Loader from './Loader/Loader';
 import Button from './Button/Button';
 import Modal from './Modal/Modal';
 
-class App extends Component {
-  state = {
-    isLoading: false,
-    queryData: [],
-    q: '',
-    page: 1,
-    error: null,
-    isModalOpen: false,
-    alt: '',
-    largeImageURL: '',
-    buttonLabel: 'Load more',
-  };
+const App = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [queryData, setQueryData] = useState([]);
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [alt, setAlt] = useState('');
+  const [largeImageURL, setLargeImageURL] = useState('');
 
-  async componentDidUpdate(prevProps, prevState) {
-    if (this.state.q !== prevState.q) {
-      this.handleQuery();
+  useEffect(() => {
+    if (q === '') {
+      return;
+    } else if (q !== '' && page === 1) {
+      const handleQuery = async () => {
+        setIsLoading(true);
+        setQueryData([]);
+        try {
+          const images = await getPictures.fetch(q, page);
+          setQueryData(images.hits);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      handleQuery();
+    } else if (page > 1) {
+      const handleLoadMoreQuery = async () => {
+        setIsLoading(true);
+        try {
+          const images = await getPictures.fetch(q, page);
+          setQueryData(prevState => [...prevState, ...images.hits]);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      handleLoadMoreQuery();
     }
-    if (this.state.page !== prevState.page && this.state.q === prevState.q) {
-      this.handleLoadMoreQuery();
-    }
-  }
+  }, [q, page]);
 
-  handleSubmit = searchQuery => {
-    if (this.state.q === searchQuery) {
+  const handleSubmit = searchQuery => {
+    if (q === searchQuery) {
       return;
     }
-    this.setState({ q: searchQuery, page: 1 });
+    setQ(searchQuery);
+    setPage(1);
   };
 
-  handleQuery = async () => {
-    const { q, page } = this.state;
-    this.setState({ isLoading: true, queryData: [] });
-    try {
-      const images = await getPictures.fetch(q, page);
-      this.setState({
-        queryData: images.hits,
-      });
-    } catch (err) {
-      this.setState({ error: err.message });
-    } finally {
-      this.setState({ isLoading: false });
-    }
+  const handleLoadMore = async () => {
+    setPage(prevState => prevState + 1);
   };
 
-  handleLoadMore = async () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const openModal = (tags, largeImageURL) => {
+    setIsModalOpen(true);
+    setAlt(tags);
+    setLargeImageURL(largeImageURL);
+  };
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
-  handleLoadMoreQuery = async () => {
-    const { q, page } = this.state;
-    this.setState({ isLoading: true });
-    try {
-      const images = await getPictures.fetch(q, page);
-      this.setState(prevState => ({
-        queryData: [...prevState.queryData, ...images.hits],
-      }));
-    } catch (err) {
-      this.setState({ error: err.message });
-    } finally {
-      this.setState({ isLoading: false });
-    }
-  };
-  openModal = (tags, largeImageURL) => {
-    this.setState({
-      isModalOpen: true,
-      alt: tags,
-      largeImageURL: largeImageURL,
-    });
-  };
-  closeModal = () => {
-    this.setState({ isModalOpen: false });
-  };
+  return (
+    <>
+      <Searchbar onSubmit={handleSubmit} />
+      {error && <p className="error">Oh crap! Something went wrong: {error}</p>}
+      {isLoading && <Loader />}
+      {queryData.length > 0 ? (
+        <>
+          <ImageGallery images={queryData} openModal={openModal} />
+          <Button onClick={handleLoadMore} label={'Load More'} />
+        </>
+      ) : (
+        ''
+      )}
+      {isModalOpen && (
+        <Modal
+          isModalOpen={isModalOpen}
+          closeModal={closeModal}
+          alt={alt}
+          largeImageURL={largeImageURL}
+        />
+      )}
+    </>
+  );
+};
 
-  render() {
-    const {
-      isLoading,
-      queryData,
-      error,
-      isModalOpen,
-      alt,
-      largeImageURL,
-      buttonLabel,
-    } = this.state;
-    return (
-      <>
-        <Searchbar onSubmit={this.handleSubmit} />
-        {error && (
-          <p className="error">Oh crap! Something went wrong: {error}</p>
-        )}
-        {isLoading && <Loader />}
-        {queryData.length > 0 ? (
-          <>
-            <ImageGallery images={queryData} openModal={this.openModal} />
-            <Button onClick={this.handleLoadMore} label={buttonLabel} />
-          </>
-        ) : (
-          <p className={css.noResults}>No results</p>
-        )}
-        {isModalOpen && (
-          <Modal
-            isModalOpen={isModalOpen}
-            closeModal={this.closeModal}
-            alt={alt}
-            largeImageURL={largeImageURL}
-          />
-        )}
-      </>
-    );
-  }
-}
 export default App;
