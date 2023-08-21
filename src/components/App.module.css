@@ -1,0 +1,8 @@
+.App {
+  padding-top: 100px;
+  display: flex;
+  justify-content: center;
+}
+.noResults {
+  display: none;
+}

@@ -1,0 +1,28 @@
+.searchBar {
+  background-color: cornflowerblue;
+  height: 100px;
+}
+
+.searchForm {
+  display: flex;
+  justify-content: center;
+  padding-top: 30px;
+}
+
+.searchFormButton {
+  width: 100px;
+  height: 40px;
+  margin-right: 50px;
+  border-radius: 20px;
+  color: cornflowerblue;
+  font-size: 20px;
+  font-weight: 700;
+  background-color: rgb(0, 0, 0);
+}
+
+.searchFormInput {
+  border-radius: 10px;
+  padding-left: 10px;
+  background-color: rgb(255, 255, 255);
+  border: 0;
+}
